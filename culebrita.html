@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de la Culebrita</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const box = 20;
+        let snake = [{ x: Math.floor(canvas.width / 2 / box) * box, y: Math.floor(canvas.height / 2 / box) * box }];
+        let direction = "RIGHT";
+        let food = generateFood();
+        let score = 0;
+        let speed = 200; // Velocidad inicial
+
+        document.addEventListener("keydown", changeDirection);
+
+        function generateFood() {
+            return {
+                x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                y: Math.floor(Math.random() * (canvas.height / box)) * box
+            };
+        }
+
+        function changeDirection(event) {
+            if (event.keyCode === 37 && direction !== "RIGHT") direction = "LEFT";
+            else if (event.keyCode === 38 && direction !== "DOWN") direction = "UP";
+            else if (event.keyCode === 39 && direction !== "LEFT") direction = "RIGHT";
+            else if (event.keyCode === 40 && direction !== "UP") direction = "DOWN";
+        }
+
+        function collision(head, array) {
+            return array.some(segment => segment.x === head.x && segment.y === head.y);
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar comida
+            ctx.fillStyle = "red";
+            ctx.fillRect(food.x, food.y, box, box);
+
+            // Mover la serpiente
+            const head = { x: snake[0].x, y: snake[0].y };
+
+            if (direction === "LEFT") head.x -= box;
+            if (direction === "UP") head.y -= box;
+            if (direction === "RIGHT") head.x += box;
+            if (direction === "DOWN") head.y += box;
+
+            // Comer comida
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                if (score % 3 === 0) {
+                    speed = Math.max(50, speed - 10); // Aumentar velocidad cada 3 comidas
+                    clearInterval(game);
+                    game = setInterval(drawGame, speed);
+                }
+                food = generateFood(); // Generar nueva comida
+            } else {
+                snake.pop(); // Quitar el último segmento
+            }
+
+            // Colisiones
+            if (head.x < 0 || head.y < 0 || head.x >= canvas.width || head.y >= canvas.height || collision(head, snake)) {
+                clearInterval(game);
+                alert("¡Perdiste! Tu puntaje es: " + score);
+                return;
+            }
+
+            snake.unshift(head);
+
+            // Dibujar serpiente
+            for (let i = 0; i < snake.length; i++) {
+                ctx.fillStyle = (i === 0) ? "green" : "lightgreen";
+                drawRoundedRect(snake[i].x, snake[i].y, box, box, 10); // Borde redondeado
+            }
+
+            // Cabeza de la serpiente (solo redonda)
+            const headPosition = snake[0];
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc(headPosition.x + box / 2, headPosition.y + box / 2, box / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ojos
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(headPosition.x + box / 4, headPosition.y + box / 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(headPosition.x + (3 * box) / 4, headPosition.y + box / 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc(headPosition.x + box / 4, headPosition.y + box / 4, 1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(headPosition.x + (3 * box) / 4, headPosition.y + box / 4, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawRoundedRect(x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        let game = setInterval(drawGame, speed);
+    </script>
+</body>
+</html>
